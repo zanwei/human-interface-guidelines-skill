@@ -2,10 +2,37 @@
 
 Apply Apple's Human Interface Guidelines (HIG) to design, review, and specify UI/UX for iOS, iPadOS, macOS, watchOS, tvOS, and visionOS.
 
-## Install
+## Prerequisites
+
+- Python 3.10+
+- `pip install -r requirements.txt`
+
+## Install (Remote)
 
 ```bash
 npx skills add zanwei/human-interface-guidelines-skill --skill human-interface-guidelines
+```
+
+## Install (Local, no owner/repo)
+
+```bash
+cd ~/.cursor/skills
+npx skills add ./human-interface-guidelines --skill human-interface-guidelines -a cursor -g -y
+```
+
+## Verify
+
+```bash
+npx skills list -g -a cursor
+python3 scripts/search_hig.py --top 3 "apple pay"
+python3 scripts/fetch_hig_page.py --help
+```
+
+## Update
+
+```bash
+npx skills check
+npx skills update
 ```
 
 ## Includes

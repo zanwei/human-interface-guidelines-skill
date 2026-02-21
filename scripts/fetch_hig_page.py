@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import sys
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlparse
@@ -54,9 +55,22 @@ def normalize_path(path: str) -> str:
 def fetch_docc_json(path: str) -> dict[str, Any]:
     path = normalize_path(path)
     url = f"{DATA_BASE}{path}.json"
-    r = requests.get(url, timeout=60, headers={"User-Agent": "Mozilla/5.0"})
-    r.raise_for_status()
-    return r.json()
+    try:
+        r = requests.get(url, timeout=60, headers={"User-Agent": "Mozilla/5.0"})
+        r.raise_for_status()
+    except requests.exceptions.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else "unknown"
+        raise RuntimeError(
+            f"Failed to fetch HIG page JSON (HTTP {status}) from {url}. "
+            "Check whether --path/--url is valid."
+        ) from exc
+    except requests.exceptions.RequestException as exc:
+        raise RuntimeError(f"Network error while fetching {url}: {exc}") from exc
+
+    try:
+        return r.json()
+    except ValueError as exc:
+        raise RuntimeError(f"Received non-JSON response from {url}.") from exc
 
 
 def choose_variant(ref: dict[str, Any]) -> str | None:
@@ -378,24 +392,28 @@ def render_page_md(data: dict[str, Any], canonical_url: str) -> str:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
-    src = ap.add_mutually_exclusive_group(required=True)
-    src.add_argument("--path", help="HIG path, e.g. /design/human-interface-guidelines/buttons")
-    src.add_argument("--url", help="Canonical URL, e.g. https://developer.apple.com/design/human-interface-guidelines/buttons")
-    ap.add_argument("--out", help="Write Markdown to file instead of stdout")
-    args = ap.parse_args()
+    try:
+        ap = argparse.ArgumentParser()
+        src = ap.add_mutually_exclusive_group(required=True)
+        src.add_argument("--path", help="HIG path, e.g. /design/human-interface-guidelines/buttons")
+        src.add_argument("--url", help="Canonical URL, e.g. https://developer.apple.com/design/human-interface-guidelines/buttons")
+        ap.add_argument("--out", help="Write Markdown to file instead of stdout")
+        args = ap.parse_args()
 
-    path = normalize_path(args.path or args.url or "")
-    canonical = abs_url(path)
+        path = normalize_path(args.path or args.url or "")
+        canonical = abs_url(path)
 
-    data = fetch_docc_json(path)
-    md = render_page_md(data, canonical_url=canonical)
+        data = fetch_docc_json(path)
+        md = render_page_md(data, canonical_url=canonical)
 
-    if args.out:
-        with open(args.out, "w", encoding="utf-8") as f:
-            f.write(md)
-    else:
-        print(md)
+        if args.out:
+            with open(args.out, "w", encoding="utf-8") as f:
+                f.write(md)
+        else:
+            print(md)
+    except Exception as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
