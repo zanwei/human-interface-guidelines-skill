@@ -1,5 +1,7 @@
 # Human Interface Guidelines Skill
 
+[![ci](https://github.com/zanwei/human-interface-guidelines-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/zanwei/human-interface-guidelines-skill/actions/workflows/ci.yml)
+
 Apply Apple's Human Interface Guidelines (HIG) to design, review, and specify UI/UX for iOS, iPadOS, macOS, watchOS, tvOS, and visionOS.
 
 ## Prerequisites
